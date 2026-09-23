@@ -1,0 +1,5 @@
+ffmpeg:
+  bin: ./bin/ffmpeg.exe
+
+api:
+  listen: ":1984"

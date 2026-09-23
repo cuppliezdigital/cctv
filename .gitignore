@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Local database & sensitive device data
+data/*.sqlite
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
+!data/.gitkeep
+
+# Downloaded recordings
+downloads/*
+!downloads/.gitkeep
+
+# Executables & Binaries (80MB+ ffmpeg.exe & go2rtc.exe - avoids GitHub 100MB file limit)
+bin/*.exe
+!bin/go2rtc.yaml
+
+# Temporary test frames & logs
+test_frame.jpg
+*.log
+npm-debug.log*
+.kilo/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini

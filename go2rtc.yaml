@@ -1,0 +1,98 @@
+ffmpeg:
+  bin: ./bin/ffmpeg.exe
+
+api:
+  listen: ":1984"
+  origin: "*"
+
+streams:
+  # NVR 172.16.6.96 (Logistik & Gudang) - Channels 1 to 16 Main Stream 1080p
+  cam_81:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/101
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/101#video=h264#hardware
+  cam_82:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/201
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/201#video=h264#hardware
+  cam_83:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/301
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/301#video=h264#hardware
+  cam_84:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/401
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/401#video=h264#hardware
+  cam_85:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/501
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/501#video=h264#hardware
+  cam_86:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/601
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/601#video=h264#hardware
+  cam_87:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/701
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/701#video=h264#hardware
+  cam_88:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/801
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/801#video=h264#hardware
+  cam_89:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/901
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/901#video=h264#hardware
+  cam_90:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1001
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1001#video=h264#hardware
+  cam_91:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1101
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1101#video=h264#hardware
+  cam_92:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1201
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1201#video=h264#hardware
+  cam_93:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1301
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1301#video=h264#hardware
+  cam_94:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1401
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1401#video=h264#hardware
+  cam_95:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1501
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1501#video=h264#hardware
+  cam_96:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1601
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/1601#video=h264#hardware
+
+  # NVR 172.16.6.94 - Channels 1 to 4 Main Stream 1080p
+  cam_129:
+    - rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/101
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/101#video=h264#hardware
+  cam_130:
+    - rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/201
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/201#video=h264#hardware
+  cam_131:
+    - rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/301
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/301#video=h264#hardware
+  cam_132:
+    - rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/401
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.94:554/Streaming/Channels/401#video=h264#hardware
+  cam_161:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/101
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/Channels/101#video=h264#hardware
+  playback_161:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/101/?starttime=20260923T000101Z&endtime=20260923T000626Z&name=00000000363000000&size=1064800776
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/101/?starttime=20260923T000101Z&endtime=20260923T000626Z&name=00000000363000000&size=1064800776#video=h264#hardware
+  playback_166:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/601/?starttime=20260923T062621Z&endtime=20260923T065357Z&name=00000000531000000&size=1064791844
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/601/?starttime=20260923T062621Z&endtime=20260923T065357Z&name=00000000531000000&size=1064791844#video=h264#hardware
+  playback_162:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/201/?starttime=20260923T000000Z&endtime=20260923T011014Z&name=00000000385000000&size=1064451768
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/201/?starttime=20260923T000000Z&endtime=20260923T011014Z&name=00000000385000000&size=1064451768#video=h264#hardware
+  playback_172:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/1201/?starttime=20260923T000000Z&endtime=20260923T000903Z&name=00010001554000000&size=1064652788
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/1201/?starttime=20260923T000000Z&endtime=20260923T000903Z&name=00010001554000000&size=1064652788#video=h264#hardware
+  playback_173:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/1301/?starttime=20260923T000000Z&endtime=20260923T011524Z&name=00000000390000000&size=1064129000
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/1301/?starttime=20260923T000000Z&endtime=20260923T011524Z&name=00000000390000000&size=1064129000#video=h264#hardware
+  playback_163:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/301/?starttime=20260923T000500Z&endtime=20260923T001544Z&name=00000000367000000&size=1064214260
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/301/?starttime=20260923T000500Z&endtime=20260923T001544Z&name=00000000367000000&size=1064214260#video=h264#hardware
+  playback_164:
+    - rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/401/?starttime=20260923T000000Z&endtime=20260923T000055Z&name=00000000361000000&size=1064654152
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.96:554/Streaming/tracks/401/?starttime=20260923T000000Z&endtime=20260923T000055Z&name=00000000361000000&size=1064654152#video=h264#hardware
+  playback_132:
+    - rtsp://admin:Hik170845@172.16.6.94:554/Streaming/tracks/401/?starttime=20260923T000000Z&endtime=20260923T010716Z&name=01010002051000000&size=1064581740
+    - ffmpeg:rtsp://admin:Hik170845@172.16.6.94:554/Streaming/tracks/401/?starttime=20260923T000000Z&endtime=20260923T010716Z&name=01010002051000000&size=1064581740#video=h264#hardware

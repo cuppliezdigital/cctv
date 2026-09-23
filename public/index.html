@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCTV Central Hub v2 - Hikvision Portal, Playback & Downloader</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            },
+            cctv: {
+              bg: '#0b0f17',
+              panel: '#131b2a',
+              border: '#202d42',
+              hover: '#1b263b',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="/cctv-player.js"></script>
+</head>
+<body class="bg-cctv-bg text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- LOGIN OVERLAY -->
+  <div id="loginModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-cctv-panel border border-cctv-border rounded-2xl w-full max-w-md p-8 shadow-2xl relative">
+      <div class="flex items-center justify-center space-x-3 mb-6">
+        <div class="w-12 h-12 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-500 text-2xl">
+          <i class="fa-solid fa-video"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-white">CCTV Central Hub</h1>
+          <p class="text-xs text-slate-400">Hikvision Management, Playback & Downloader</p>
+        </div>
+      </div>
+
+      <div id="loginAlert" class="hidden mb-4 p-3 rounded-lg text-sm bg-rose-500/20 border border-rose-500/40 text-rose-300"></div>
+
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <input type="text" id="loginUsername" value="admin" required
+              class="w-full bg-slate-900 border border-cctv-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white placeholder-slate-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="loginPassword" value="admin123" required
+              class="w-full bg-slate-900 border border-cctv-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white placeholder-slate-500">
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Default: admin / admin123</p>
+        </div>
+
+        <button type="submit" id="loginBtn"
+          class="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium py-2.5 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2">
+          <span>Masuk ke Sistem</span>
+          <i class="fa-solid fa-arrow-right text-sm"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER -->
+  <div id="appContainer" class="hidden flex-1 flex flex-col min-h-screen">
+    
+    <!-- TOP HEADER -->
+    <header class="bg-cctv-panel/90 backdrop-blur border-b border-cctv-border sticky top-0 z-30 px-4 lg:px-6 py-2.5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        
+        <!-- Brand & Toggle Sidebar -->
+        <div class="flex items-center space-x-3">
+          <button id="toggleSidebarBtn" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-cctv-border flex items-center justify-center transition" title="Buka/Tutup Daftar NVR">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-base shadow-lg shadow-emerald-500/20">
+            <i class="fa-solid fa-video"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-base text-white">CCTV Hub</span>
+              <span class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">v2.0</span>
+            </div>
+            <p class="text-[11px] text-slate-400 flex items-center space-x-1.5">
+              <span id="statSummary">Memuat...</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- GLOBAL SEARCH BAR -->
+        <div class="flex-1 max-w-lg mx-auto w-full">
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+            </span>
+            <input type="text" id="globalSearchInput" placeholder="Cari kamera..."
+              class="w-full bg-slate-900/90 border border-cctv-border rounded-xl pl-9 pr-8 py-1.5 text-xs focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 text-white placeholder-slate-500 shadow-inner">
+            <button id="clearSearchBtn" class="hidden absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-white">
+              <i class="fa-solid fa-xmark text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs & Profile -->
+        <div class="flex items-center space-x-2">
+          <nav class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-cctv-border text-xs font-medium">
+            <button class="nav-tab active px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition" data-tab="liveView">
+              <i class="fa-solid fa-border-all"></i>
+              <span class="hidden sm:inline">Live View</span>
+            </button>
+            <button class="nav-tab px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition" data-tab="playback">
+              <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+              <span class="hidden sm:inline">Playback Rekaman</span>
+            </button>
+            <button class="nav-tab px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition relative" data-tab="downloads">
+              <i class="fa-solid fa-download text-blue-400"></i>
+              <span class="hidden sm:inline">Download</span>
+              <span id="activeDlBadge" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping absolute top-1 right-1"></span>
+            </button>
+            <button class="nav-tab admin-only px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition" data-tab="devices">
+              <i class="fa-solid fa-server"></i>
+              <span class="hidden sm:inline">Kelola NVR</span>
+            </button>
+            <button class="nav-tab admin-only px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition" data-tab="users">
+              <i class="fa-solid fa-users"></i>
+              <span class="hidden sm:inline">User</span>
+            </button>
+          </nav>
+
+          <!-- Profile / Logout -->
+          <div class="flex items-center space-x-2 border-l border-cctv-border pl-2">
+            <div class="text-right hidden xl:block">
+              <p id="currentUserName" class="text-xs font-medium text-white leading-tight">Admin</p>
+              <span id="currentUserRole" class="text-[9px] text-emerald-400 uppercase font-semibold">ADMIN</span>
+            </div>
+            <button id="logoutBtn" title="Keluar / Logout"
+              class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-rose-900/40 hover:text-rose-300 text-slate-400 flex items-center justify-center transition border border-cctv-border">
+              <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- CONTENT BODY (WITH LEFT SIDEBAR TREE VIEW) -->
+    <main class="flex-1 flex overflow-hidden">
+      
+      <!-- LEFT SIDEBAR: TREE VIEW NVR & CHANNELS ASLI -->
+      <aside id="nvrSidebar" class="w-72 bg-cctv-panel border-r border-cctv-border flex flex-col flex-shrink-0 transition-all duration-300">
+        <div class="p-3 border-b border-cctv-border flex items-center justify-between bg-slate-900/40">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-layer-group text-amber-400 text-xs"></i>
+            <span class="font-bold text-xs text-white uppercase tracking-wider">Grup & NVR</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button onclick="openAddGroupModal()" class="admin-only text-slate-400 hover:text-amber-400 text-xs p-1" title="+ Tambah Grup Baru">
+              <i class="fa-solid fa-folder-plus"></i>
+            </button>
+            <button onclick="fetchGroups(); fetchDevices(); fetchCameras();" class="text-slate-400 hover:text-white text-xs p-1" title="Segarkan Data">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-2 border-b border-cctv-border/60 bg-slate-900/20 space-y-1.5">
+          <input type="text" id="sidebarFilterInput" placeholder="Cari NVR / kamera..."
+            class="w-full bg-slate-900 border border-cctv-border rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          <div class="flex items-center justify-between text-[11px] px-0.5">
+            <span class="text-slate-400 font-medium flex items-center space-x-1">
+              <i class="fa-regular fa-folder text-[10px] text-amber-400"></i>
+              <span>Grup:</span>
+            </span>
+            <select id="sidebarGroupFilter" onchange="onSidebarGroupFilterChange(this.value)"
+              class="bg-slate-900 text-slate-300 border border-cctv-border rounded px-2 py-0.5 text-[11px] focus:outline-none focus:border-amber-500 max-w-[170px] truncate">
+              <option value="">Semua Grup</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Scrollable Tree Container (Grouped by Folder) -->
+        <div id="sidebarNvrTree" class="flex-1 overflow-y-auto p-2 space-y-2">
+          <!-- Dynamic Accordion Nodes: Groups -> NVR -> Channels -->
+        </div>
+
+        <div class="p-2.5 border-t border-cctv-border bg-slate-900/60 text-[11px] text-slate-400 flex items-center justify-between">
+          <span id="sidebarTotalCamLabel">0 Kamera Terdaftar</span>
+          <div class="flex items-center space-x-2">
+            <button class="admin-only text-amber-400 hover:text-amber-300 font-medium" onclick="openAddGroupModal();" title="Tambah Grup">
+              + Grup
+            </button>
+            <span class="text-slate-600">•</span>
+            <button class="admin-only text-brand-400 hover:text-brand-300 font-medium" onclick="switchTab('devices'); openAddDeviceModal();" title="Tambah NVR">
+              + NVR
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- TAB 1: LIVE VIEW -->
+      <section id="tab-liveView" class="tab-content flex-1 flex flex-col p-2.5 sm:p-3 overflow-hidden gap-2 h-full">
+        
+        <!-- Filter Bar & Grid Control -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-cctv-panel p-2.5 sm:p-3 rounded-xl border border-cctv-border flex-shrink-0">
+          <!-- Group Filter Pills -->
+          <div class="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none" id="groupFilterPills">
+            <button class="group-pill active px-3 py-1 rounded-lg text-xs font-medium bg-brand-500 text-white shadow-sm" data-group-id="">
+              Semua Grup
+            </button>
+          </div>
+
+          <!-- Grid Size Selector, Play All & Paging Controls -->
+          <div class="flex items-center space-x-2.5 ml-auto">
+            <!-- Play All / Stop All Live Feeds -->
+            <button type="button" id="livePlayAllBtn" onclick="togglePlayAllLiveStreams()"
+              class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm"
+              title="Putar Live Stream semua kamera yang tampil di layar">
+              <i class="fa-solid fa-play text-[10px]"></i>
+              <span id="livePlayAllLabel">Putar Semua</span>
+            </button>
+
+            <!-- Page Pagination (Prev / Next) -->
+            <div id="livePagingControls" class="flex items-center space-x-1 bg-slate-900 px-2 py-0.5 rounded-lg border border-cctv-border text-xs">
+              <button type="button" id="livePrevPageBtn" onclick="prevLivePage()" class="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed" title="Halaman Sebelumnya">
+                <i class="fa-solid fa-chevron-left text-[10px]"></i>
+              </button>
+              <span id="livePageIndicator" class="text-[11px] font-mono text-amber-400 px-1 font-bold">1 / 1</span>
+              <button type="button" id="liveNextPageBtn" onclick="nextLivePage()" class="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed" title="Halaman Berikutnya">
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+              </button>
+            </div>
+
+            <!-- Grid Selector -->
+            <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-cctv-border text-xs">
+              <button class="grid-btn px-2 py-1 rounded text-slate-400 hover:text-white transition" data-grid="1" title="1x1 Fokus (Pas Layar Penuh)">1x1</button>
+              <button class="grid-btn active px-2 py-1 rounded bg-slate-800 text-white transition" data-grid="4" title="2x2 Grid (4 Kamera)">2x2</button>
+              <button class="grid-btn px-2 py-1 rounded text-slate-400 hover:text-white transition" data-grid="9" title="3x3 Grid (9 Kamera)">3x3</button>
+              <button class="grid-btn px-2 py-1 rounded text-slate-400 hover:text-white transition" data-grid="16" title="4x4 Grid (16 Kamera)">4x4</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA GRID CONTAINER -->
+        <div id="cameraGrid" class="live-grid-4 flex-1 min-h-0 w-full h-full overflow-hidden">
+          <!-- Dynamic camera cards -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyCameraState" class="hidden flex-col items-center justify-center p-12 text-center bg-cctv-panel/40 border border-cctv-border rounded-2xl">
+          <i class="fa-solid fa-video-slash text-4xl text-slate-600 mb-3"></i>
+          <h3 class="text-lg font-medium text-white mb-1">Tidak Ada Kamera Ditemukan</h3>
+          <p class="text-sm text-slate-400 max-w-sm mb-4">Pastikan Anda telah menambahkan perangkat NVR atau ubah kata kunci pencarian Anda.</p>
+          <button class="admin-only px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold" onclick="switchTab('devices'); openAddDeviceModal();">
+            <i class="fa-solid fa-plus mr-1"></i> Tambah NVR Pertama
+          </button>
+        </div>
+
+      </section>
+
+      <!-- TAB 2: PLAYBACK REKAMAN (Video Playback Tanggal Lama) -->
+      <section id="tab-playback" class="tab-content hidden flex-1 flex flex-col p-2.5 sm:p-3 overflow-hidden gap-2 h-full">
+        
+        <!-- Playback Filter & Date Controls (Compact Header) -->
+        <div class="bg-cctv-panel p-3 rounded-xl border border-cctv-border shadow-md flex-shrink-0">
+          <form id="playbackSearchForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 items-end">
+            <div class="md:col-span-3">
+              <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Perangkat NVR</label>
+              <select id="pbDeviceSelect" required
+                class="w-full bg-slate-900 border border-cctv-border rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                <option value="">-- Pilih NVR --</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-3">
+              <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Channel Kamera</label>
+              <select id="pbChannelSelect" required disabled
+                class="w-full bg-slate-900 border border-cctv-border rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 disabled:opacity-50">
+                <option value="">-- Pilih NVR terlebih dahulu --</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-2 relative">
+              <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+                <span>Tanggal</span>
+                <button type="button" id="toggleCalendarBtn" class="text-[10px] text-amber-400 hover:text-amber-300 flex items-center space-x-1" title="Buka Kalender Titik Rekaman NVR">
+                  <i class="fa-regular fa-calendar-days"></i>
+                  <span>Titik NVR</span>
+                </button>
+              </label>
+              <input type="date" id="pbDateInput" required
+                class="w-full bg-slate-900 border border-cctv-border rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
+
+              <!-- Hikvision Calendar Popover -->
+              <div id="pbCalendarPopover" class="hidden absolute top-full left-0 z-50 mt-1 w-72 bg-slate-900 border border-cctv-border rounded-2xl shadow-2xl p-3 space-y-2">
+                <div class="flex items-center justify-between pb-2 border-b border-cctv-border">
+                  <button type="button" id="calPrevMonthBtn" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <span id="calMonthYearLabel" class="font-bold text-xs text-white">September 2026</span>
+                  <button type="button" id="calNextMonthBtn" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <!-- Weekday headers -->
+                <div class="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400 py-1">
+                  <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+                </div>
+                <!-- Calendar Day Cells Grid -->
+                <div id="calDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs">
+                  <!-- Dynamic day buttons with blue recording indicator dots -->
+                </div>
+                <div class="pt-2 border-t border-cctv-border flex items-center justify-between text-[10px] text-slate-400">
+                  <div class="flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 inline-block shadow-[0_0_4px_#3b82f6]"></span>
+                    <span>Ada Rekaman NVR</span>
+                  </div>
+                  <button type="button" id="calCloseBtn" class="text-slate-400 hover:text-white">Tutup</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+                <span>Jam Mulai (24 Jam)</span>
+                <span class="text-[9px] text-amber-400 font-mono" title="Ketik angka tanpa tanda titik dua, misal: 110732">AUTO ':'</span>
+              </label>
+              <div class="relative">
+                <input type="text" id="pbTimeInput" value="00:00:00" required maxlength="8"
+                  placeholder="00:00:00"
+                  pattern="^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$"
+                  title="Ketik angka langsung misal 110732 -> otomatis menjadi 11:07:32"
+                  class="w-full bg-slate-900 border border-cctv-border rounded-xl pl-2.5 pr-7 py-1.5 text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-500 tracking-wider">
+                <button type="button" onclick="setPlaybackTimeToNow()" class="absolute inset-y-0 right-0 flex items-center pr-2 text-slate-400 hover:text-amber-400" title="Pasang Jam Sekarang">
+                  <i class="fa-solid fa-clock text-[10px]"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 flex items-center space-x-2">
+              <button type="submit" id="pbSearchBtn"
+                class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-1.5 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-amber-500/20">
+                <i class="fa-solid fa-play"></i>
+                <span>Putar Rekaman</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Full-Width Playback Video Player Screen (Flex 1 to fit viewport) -->
+        <div id="playbackScreenCard" class="flex-1 min-h-0 flex flex-col cctv-card overflow-hidden rounded-xl border border-cctv-border bg-slate-950 shadow-lg">
+          <!-- Player Top Toolbar -->
+          <div id="playbackTopToolbar" class="px-3 py-1.5 bg-cctv-panel flex flex-wrap items-center justify-between border-b border-cctv-border text-xs gap-2 flex-shrink-0">
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30 text-[10px]">PLAYBACK</span>
+              <span id="pbActiveCamTitle" class="font-bold text-white text-xs">Belum Ada Rekaman Diputar</span>
+            </div>
+
+            <!-- Playback CCTV Grid Switcher (1x1, 2x2, 3x3, 4x4) -->
+            <div class="flex items-center space-x-2">
+              <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-cctv-border text-xs">
+                <button type="button" class="pb-grid-btn px-2.5 py-0.5 rounded text-slate-400 hover:text-white transition font-semibold" data-grid="1" onclick="setPlaybackGridSize(1)" title="1x1 Fokus Penuh">1x1</button>
+                <button type="button" class="pb-grid-btn active px-2.5 py-0.5 rounded bg-slate-800 text-amber-400 font-bold border border-amber-500/30 transition" data-grid="4" onclick="setPlaybackGridSize(4)" title="2x2 Grid (4 Kamera)">2x2</button>
+                <button type="button" class="pb-grid-btn px-2.5 py-0.5 rounded text-slate-400 hover:text-white transition font-semibold" data-grid="9" onclick="setPlaybackGridSize(9)" title="3x3 Grid (9 Kamera)">3x3</button>
+                <button type="button" class="pb-grid-btn px-2.5 py-0.5 rounded text-slate-400 hover:text-white transition font-semibold" data-grid="16" onclick="setPlaybackGridSize(16)" title="4x4 Grid (16 Kamera)">4x4</button>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <div id="pbTimeRangeBadge" class="text-slate-400 font-mono text-[11px] bg-slate-900 px-2 py-0.5 rounded border border-cctv-border">-</div>
+              <button type="button" id="pbDirectDownloadBtn" class="hidden px-2.5 py-0.5 rounded-lg bg-brand-500/20 hover:bg-brand-500 text-brand-300 hover:text-white border border-brand-500/30 font-medium transition text-xs flex items-center space-x-1">
+                <i class="fa-solid fa-download text-[10px]"></i>
+                <span>Unduh Video Ini</span>
+              </button>
+              <button type="button" id="pbTopBtnExitFullscreen" onclick="togglePlaybackFullscreen()" class="hidden px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 transition text-xs font-semibold items-center space-x-1.5" title="Keluar Layar Penuh (Esc / F)">
+                <i class="fa-solid fa-compress"></i>
+                <span>Keluar Layar Penuh</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Video Player Container (Fills All Remaining Vertical Height) -->
+          <div id="playbackPlayerContainer" class="cctv-screen relative flex-1 min-h-0 w-full bg-black flex items-center justify-center overflow-hidden">
+            <div class="text-center p-6 text-slate-500 select-none">
+              <i class="fa-solid fa-film text-4xl mb-2 text-slate-600"></i>
+              <p class="text-sm text-slate-300 font-semibold">Layar Pemutar Video Rekaman (Playback)</p>
+              <p class="text-xs text-slate-500 max-w-md mt-1 mx-auto">Pilih kamera, tanggal, dan jam, lalu klik <span class="text-amber-400 font-bold">"Putar Rekaman"</span> untuk memutar rekaman dari harddisk NVR.</p>
+            </div>
+          </div>
+
+          <!-- HIKVISION 24-HOUR INTERACTIVE TIMELINE SCROLLER (CENTER-FIXED NEEDLE) -->
+          <div id="playbackTimelineContainer" class="bg-slate-950 border-t border-cctv-border select-none relative px-3 py-1.5 flex-shrink-0">
+            <!-- Top Bar: Zoom Scale & Time Display -->
+            <div class="flex items-center justify-between text-xs mb-1 px-0.5">
+              <div class="flex items-center space-x-2">
+                <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1">
+                  <i class="fa-solid fa-timeline text-amber-400"></i>
+                  <span>Linimasa NVR:</span>
+                </span>
+                <span id="pbTimelineCurrentTime" class="font-mono text-xs font-bold text-amber-400 bg-slate-900 px-2 py-0.5 rounded border border-cctv-border">
+                  00:00:00
+                </span>
+                <span class="text-[10px] text-slate-500 hidden sm:inline">
+                  (Klik kiri tahan & geser trek ke kiri/kanan untuk atur waktu)
+                </span>
+              </div>
+
+              <!-- Timeline Zoom Buttons: Minus & Plus (24 Jam s/d 1 Menit) -->
+              <div class="flex items-center space-x-2 bg-slate-900 px-2.5 py-1 rounded-lg border border-cctv-border text-xs">
+                <span id="pbZoomScaleLabel" class="text-[11px] font-mono text-amber-400 font-bold">Skala: 24 Jam</span>
+                <div class="flex items-center space-x-1">
+                  <button type="button" id="tlBtnZoomOut" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white flex items-center justify-center font-bold text-xs border border-slate-700 transition active:scale-95" title="Perkecil Skala (-)">
+                    <i class="fa-solid fa-minus text-[10px]"></i>
+                  </button>
+                  <button type="button" id="tlBtnZoomIn" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white flex items-center justify-center font-bold text-xs border border-slate-700 transition active:scale-95" title="Perbesar Skala (+) s/d 1 Menit Detik">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timeline Track & Ruler Wrapper (Drag-enabled) -->
+            <div class="relative w-full overflow-hidden rounded-lg bg-slate-900 border border-cctv-border h-16 cursor-grab active:cursor-grabbing select-none" id="timelineScrollerWrapper">
+              <!-- Draggable Track: Contains Ruler and Recording Segments -->
+              <div id="timelineTrack" class="absolute top-0 bottom-0 left-0 h-full will-change-transform" style="transform: translateX(0px);">
+                <!-- Dynamic hour / minute / second ticks and labels rendered by JS -->
+                <div id="timelineRuler" class="absolute inset-0 pointer-events-none"></div>
+
+                <!-- Recording Segments Layer (Blue Bars) -->
+                <div id="timelineRecordingBlocks" class="absolute inset-0 pointer-events-none"></div>
+              </div>
+
+              <!-- Playhead Needle (Yellow Vertical Line Fixed Permanently at Center: 50%) -->
+              <div id="timelinePlayhead" class="absolute top-0 bottom-0 pointer-events-none flex flex-col items-center z-20" style="left: 50%; transform: translateX(-50%);">
+                <div id="timelineCenterTimeDisplay" class="bg-slate-950/95 text-white font-mono text-[11px] font-bold px-2 py-0.5 rounded border border-amber-400/60 shadow-[0_2px_8px_rgba(0,0,0,0.8)] whitespace-nowrap -mt-0.5 tracking-wider">
+                  2026-09-18 00:00:00
+                </div>
+                <div class="w-2.5 h-2.5 bg-amber-400 rotate-45 shadow-[0_0_8px_#f59e0b] border border-slate-950 -mt-0.5"></div>
+                <div class="w-[2px] flex-1 bg-amber-400 shadow-[0_0_8px_#f59e0b]"></div>
+              </div>
+            </div>
+
+            <!-- Legend & Shortcuts -->
+            <div class="flex items-center space-x-4 mt-1 text-[10px] text-slate-400 px-1">
+              <div class="flex items-center space-x-1.5">
+                <span class="inline-block w-3 h-2 rounded bg-blue-500 shadow-[0_0_4px_#3b82f6]"></span>
+                <span>Rekaman NVR (Biru)</span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <span class="inline-block w-2.5 h-2.5 bg-amber-400 rotate-45"></span>
+                <span>Jarum Tengah (Waktu Ditunjuk)</span>
+              </div>
+              <div class="flex items-center space-x-1 text-slate-500 ml-auto hidden md:flex">
+                <i class="fa-solid fa-keyboard"></i>
+                <span>Pintasan: <b>Klik tahan & geser</b> linimasa | <b>Ctrl + Scroll Mouse</b> Single Frame</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Playback Control Toolbar (Di bawah layar rekaman) -->
+          <div id="playbackToolbar" class="bg-cctv-panel border-t border-cctv-border px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 select-none flex-shrink-0">
+            <!-- Left: Playback Controls (Stop, Step Back, Play/Pause, Step Forward, Single Frame) -->
+            <div class="flex items-center space-x-1.5">
+              <button type="button" id="pbBtnStop" title="Berhenti / Reset"
+                class="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-cctv-border">
+                <i class="fa-solid fa-stop text-xs"></i>
+              </button>
+
+              <button type="button" id="pbBtnStepBack" title="Mundur 10 Detik"
+                class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center space-x-1 transition border border-cctv-border text-xs font-mono">
+                <i class="fa-solid fa-backward-step"></i>
+                <span>-10s</span>
+              </button>
+
+              <button type="button" id="pbBtnPlayPause" title="Jeda / Lanjutkan"
+                class="h-8 px-3.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow">
+                <i id="pbIconPlayPause" class="fa-solid fa-pause"></i>
+                <span id="pbLabelPlayPause">Jeda</span>
+              </button>
+
+              <button type="button" id="pbBtnStepForward" title="Maju 10 Detik"
+                class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center space-x-1 transition border border-cctv-border text-xs font-mono">
+                <span>+10s</span>
+                <i class="fa-solid fa-forward-step"></i>
+              </button>
+
+              <div class="h-5 w-px bg-cctv-border mx-1"></div>
+
+              <!-- Single Frame Stepping Buttons (Hikvision Style) -->
+              <div class="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-amber-500/30">
+                <button type="button" id="pbBtnFrameBack" title="Mundur 1 Frame (-0.04s) / Ctrl + Scroll Bawah"
+                  class="h-7 px-2 rounded text-amber-400 hover:text-white hover:bg-slate-800 transition text-xs font-mono font-bold flex items-center space-x-1">
+                  <i class="fa-solid fa-backward-step text-[10px]"></i>
+                  <span>|◀</span>
+                </button>
+                <span class="text-[10px] text-amber-500/80 font-mono font-semibold px-1">Frame</span>
+                <button type="button" id="pbBtnFrameForward" title="Maju 1 Frame (+0.04s) / Ctrl + Scroll Atas"
+                  class="h-7 px-2 rounded text-amber-400 hover:text-white hover:bg-slate-800 transition text-xs font-mono font-bold flex items-center space-x-1">
+                  <span>▶|</span>
+                  <i class="fa-solid fa-forward-step text-[10px]"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Center: Playback Speed Control (-4x to +4x) -->
+            <div class="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-cctv-border text-xs">
+              <span class="text-[10px] text-slate-400 px-1 font-semibold">Laju:</span>
+              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="0.25">-4x</button>
+              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="0.5">-2x</button>
+              <button type="button" class="pb-speed-btn active px-2.5 py-0.5 rounded text-xs font-mono font-bold text-white bg-brand-500" data-speed="1.0">1x</button>
+              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="2.0">2x</button>
+              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="4.0">4x</button>
+            </div>
+
+            <!-- Right: Zoom Video Canvas Control (In/Out/Reset/Fullscreen) -->
+            <div class="flex items-center space-x-1">
+              <button type="button" id="pbBtnToggleTimeline" class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center space-x-1.5 transition border border-cctv-border text-xs font-semibold mr-1" title="Tampilkan / Sembunyikan Linimasa NVR">
+                <i class="fa-solid fa-timeline text-amber-400"></i>
+                <span class="hidden sm:inline">Linimasa</span>
+              </button>
+
+              <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-cctv-border text-xs mr-1">
+                <button type="button" id="pbBtnZoomOut" class="h-7 w-7 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Zoom Out Layar Video">
+                  <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
+                </button>
+                <span id="pbZoomLevel" class="text-[10px] font-mono text-slate-300 px-1.5 font-semibold">100%</span>
+                <button type="button" id="pbBtnZoomIn" class="h-7 w-7 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Zoom In Layar Video">
+                  <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
+                </button>
+                <button type="button" id="pbBtnZoomReset" class="h-7 px-1.5 rounded text-[10px] text-slate-400 hover:text-white hover:bg-slate-800 transition font-mono" title="Reset Zoom Layar">
+                  1:1
+                </button>
+              </div>
+
+              <button type="button" id="pbBtnFullscreen" class="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-cctv-border" title="Layar Penuh (F)">
+                <i id="pbIconFullscreen" class="fa-solid fa-expand text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- TAB 3: DOWNLOAD REKAMAN (Video Downloader) -->
+      <section id="tab-downloads" class="tab-content hidden flex-1 flex flex-col p-4 lg:p-6 overflow-y-auto space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- LEFT CARD: FORM REQUEST DOWNLOAD -->
+          <div class="lg:col-span-5 bg-cctv-panel border border-cctv-border rounded-2xl p-6 shadow-xl space-y-5">
+            <div class="flex items-center space-x-3 pb-3 border-b border-cctv-border">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-white text-lg">Unduh Rekaman Video</h2>
+                <p class="text-xs text-slate-400">Download rekaman langsung dari storage NVR Hikvision ke format MP4</p>
+              </div>
+            </div>
+
+            <form id="downloadForm" class="space-y-4">
+              <!-- 1. Pilih Device NVR -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  1. Pilih Perangkat NVR / IP
+                </label>
+                <select id="dlDeviceSelect" required
+                  class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                  <option value="">-- Pilih NVR / IP --</option>
+                </select>
+              </div>
+
+              <!-- 2. Pilih Channel Kamera -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  2. Pilih Channel Kamera (Nama Asli NVR)
+                </label>
+                <select id="dlChannelSelect" required disabled
+                  class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option value="">-- Pilih NVR terlebih dahulu --</option>
+                </select>
+              </div>
+
+              <!-- 3 & 4. Rentang Waktu Rekaman: Start Time & End Time Lengkap -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>3. Waktu Mulai (Start)</span>
+                    <button type="button" onclick="setDlStartToNow()" class="text-[10px] text-amber-400 hover:underline">Pasang Sekarang</button>
+                  </label>
+                  <input type="datetime-local" id="dlStartTime" required
+                    class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>4. Waktu Selesai (End)</span>
+                    <span class="text-[10px] text-slate-400">Hingga 2-3 Jam+</span>
+                  </label>
+                  <input type="datetime-local" id="dlEndTime" required
+                    class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                </div>
+              </div>
+
+              <!-- Pilihan Durasi Cepat (Otomatis isi Waktu Selesai) -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    Pintasan Durasi Cepat
+                  </label>
+                  <span id="dlCalculatedDurationLabel" class="text-[11px] text-amber-400 font-mono font-bold">Durasi: 15 Menit</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1.5 mb-2">
+                  <button type="button" class="duration-btn py-1.5 rounded-lg border border-brand-500 bg-brand-500/20 text-brand-400 text-xs font-medium" data-mins="15">+15m</button>
+                  <button type="button" class="duration-btn py-1.5 rounded-lg border border-cctv-border bg-slate-900 text-slate-400 hover:text-white text-xs font-medium" data-mins="30">+30m</button>
+                  <button type="button" class="duration-btn py-1.5 rounded-lg border border-cctv-border bg-slate-900 text-slate-400 hover:text-white text-xs font-medium" data-mins="60">+1 Jam</button>
+                  <button type="button" class="duration-btn py-1.5 rounded-lg border border-cctv-border bg-slate-900 text-slate-400 hover:text-white text-xs font-medium" data-mins="120">+2 Jam</button>
+                  <button type="button" class="duration-btn py-1.5 rounded-lg border border-cctv-border bg-slate-900 text-slate-400 hover:text-white text-xs font-medium" data-mins="180">+3 Jam</button>
+                </div>
+                <input type="hidden" id="dlDurationInput" value="15">
+              </div>
+
+              <!-- 5. Kualitas Stream -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  5. Kualitas Video
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-cctv-border bg-slate-900 cursor-pointer hover:border-brand-500">
+                    <input type="radio" name="streamQuality" value="main" checked class="text-brand-500 focus:ring-brand-500">
+                    <div>
+                      <span class="text-xs font-medium text-white block">Main Stream</span>
+                      <span class="text-[10px] text-slate-400">Kualitas HD Asli (~1.2 GB / jam)</span>
+                    </div>
+                  </label>
+                  <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-cctv-border bg-slate-900 cursor-pointer hover:border-brand-500">
+                    <input type="radio" name="streamQuality" value="sub" class="text-brand-500 focus:ring-brand-500">
+                    <div>
+                      <span class="text-xs font-medium text-white block">Sub Stream</span>
+                      <span class="text-[10px] text-slate-400">File Ringan (~150 MB / jam)</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="pt-2 space-y-2">
+                <button type="submit" id="startDownloadBtn"
+                  class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 text-xs">
+                  <i class="fa-solid fa-download"></i>
+                  <span>Mulai Unduh Video (.MP4)</span>
+                </button>
+                <button type="button" id="checkRecordingsBtn" onclick="handleCheckRecordings()"
+                  class="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-cctv-border font-medium py-2 rounded-xl transition text-xs flex items-center justify-center space-x-1.5">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <span>Cek Rekaman Tersedia di NVR (ISAPI)</span>
+                </button>
+
+                <!-- Box Preview Hasil Cek Rekaman NVR -->
+                <div id="checkRecordingsResult" class="hidden p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-xs space-y-2">
+                  <!-- Dynamic check preview -->
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- RIGHT CARD: DAFTAR ANTREAN & RIWAYAT DOWNLOAD -->
+          <div class="lg:col-span-7 bg-cctv-panel border border-cctv-border rounded-2xl p-6 shadow-xl flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-cctv-border mb-4">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-list-check text-brand-500"></i>
+                <h3 class="font-bold text-white text-base">Riwayat & Antrean Unduhan</h3>
+              </div>
+              <button id="refreshJobsBtn" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Segarkan</span>
+              </button>
+            </div>
+
+            <!-- List Jobs -->
+            <div id="downloadJobsList" class="flex-1 overflow-y-auto space-y-3 pr-1">
+              <!-- Dynamic download items -->
+            </div>
+
+            <!-- Empty Jobs State -->
+            <div id="emptyDownloadJobs" class="hidden flex flex-col items-center justify-center py-12 text-center text-slate-500">
+              <i class="fa-solid fa-inbox text-3xl mb-2 text-slate-600"></i>
+              <p class="text-sm">Belum ada video yang diunduh.</p>
+              <p class="text-xs text-slate-600">Pilih NVR dan channel di sebelah kiri untuk mulai mengunduh.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- TAB 4: MANAJEMEN NVR & GRUP (Admin Only) -->
+      <section id="tab-devices" class="tab-content hidden flex-1 flex flex-col p-4 lg:p-6 overflow-y-auto space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-cctv-panel p-4 rounded-2xl border border-cctv-border">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-server text-brand-500"></i>
+              <span>Daftar Perangkat NVR Hikvision</span>
+            </h2>
+            <p class="text-xs text-slate-400">Kelola IP NVR dan auto-scan channel dengan nama asli bawaan NVR</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openAddGroupModal()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-cctv-border text-xs font-semibold transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-folder-plus text-brand-400"></i>
+              <span>+ Kelola Grup</span>
+            </button>
+            <button onclick="openAddDeviceModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-lg shadow-brand-500/20">
+              <i class="fa-solid fa-plus"></i>
+              <span>+ Tambah NVR Baru</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- NVR List Cards -->
+        <div id="devicesListContainer" class="space-y-4">
+          <!-- Dynamic devices rendered here -->
+        </div>
+
+      </section>
+
+      <!-- TAB 5: MANAJEMEN USER (Admin Only) -->
+      <section id="tab-users" class="tab-content hidden flex-1 flex flex-col p-4 lg:p-6 overflow-y-auto space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-cctv-panel p-4 rounded-2xl border border-cctv-border">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-users-gear text-brand-500"></i>
+              <span>Manajemen Pengguna (Admin & User)</span>
+            </h2>
+            <p class="text-xs text-slate-400">Kelola akun yang berhak mengakses sistem CCTV</p>
+          </div>
+          <button onclick="openAddUserModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-lg shadow-brand-500/20">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>+ Tambah Pengguna Baru</span>
+          </button>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-cctv-panel border border-cctv-border rounded-2xl overflow-hidden shadow-xl">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-slate-900/80 text-xs uppercase font-semibold text-slate-400 border-b border-cctv-border">
+              <tr>
+                <th class="px-6 py-3.5">Nama & Username</th>
+                <th class="px-6 py-3.5">Peran (Role)</th>
+                <th class="px-6 py-3.5">Hak Akses Grup</th>
+                <th class="px-6 py-3.5">Tanggal Dibuat</th>
+                <th class="px-6 py-3.5 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody" class="divide-y divide-cctv-border">
+              <!-- Dynamic user rows -->
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- MODAL: TAMBAH NVR (AUTO-SCAN CHANNEL TANPA INPUT MANUAL) -->
+  <div id="addDeviceModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-cctv-panel border border-cctv-border rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-cctv-border">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-server text-brand-500"></i>
+          <h3 class="font-bold text-white text-lg">Tambah NVR Hikvision</h3>
+        </div>
+        <button onclick="closeModal('addDeviceModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Auto Scan Notice Badge -->
+      <div class="p-3 bg-emerald-950/40 border border-emerald-800/40 rounded-xl flex items-start space-x-2.5 text-xs text-emerald-300">
+        <i class="fa-solid fa-wand-magic-sparkles text-emerald-400 text-sm mt-0.5"></i>
+        <div>
+          <span class="font-bold block text-white">Auto-Scan Channel & Nama Bawaan</span>
+          <span class="text-[11px] text-emerald-400/90">Sistem otomatis mendeteksi jumlah channel dan menarik nama asli bawaan kamera langsung dari NVR tanpa perlu input manual.</span>
+        </div>
+      </div>
+
+      <div id="testConnAlert" class="hidden p-3 rounded-xl text-xs"></div>
+
+      <!-- Serial Number Auto Search Box (Connect without IP) -->
+      <div class="p-3 bg-brand-950/40 border border-brand-800/40 rounded-xl space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="block text-[11px] font-bold text-brand-300 uppercase">
+            <i class="fa-solid fa-barcode mr-1"></i> Cari Lewat Nomor Seri (Auto-Detect IP)
+          </label>
+          <span class="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40">Bebas Gonta-Ganti IP</span>
+        </div>
+        <div class="flex space-x-2">
+          <input type="text" id="devSerialSearch" placeholder="Ketik nomor seri, misal: GK5808953"
+            class="flex-1 bg-slate-900 border border-cctv-border rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          <button type="button" id="btnAutoFindSerial" class="px-3 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-medium text-xs flex items-center space-x-1 transition shadow">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Cari IP</span>
+          </button>
+          <button type="button" id="btnScanSadp" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-medium text-xs flex items-center space-x-1 transition border border-amber-500/30 shadow" title="Pindai Semua NVR di Jaringan LAN (SADP)">
+            <i class="fa-solid fa-network-wired"></i>
+            <span>Scan LAN</span>
+          </button>
+        </div>
+        <div id="serialSearchResult" class="hidden text-[11px] p-2 rounded-lg"></div>
+        <p class="text-[10px] text-slate-400">Jika teknisi mengganti IP NVR di masa depan, sistem otomatis mendeteksi IP baru dari nomor seri ini.</p>
+      </div>
+
+      <form id="addDeviceForm" class="space-y-3.5">
+        <input type="hidden" id="devSerial">
+        <input type="hidden" id="devModel">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama NVR / Lokasi</label>
+          <input type="text" id="devName" placeholder="Contoh: NVR Gudang Balaraja" required
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Grup Lokasi</label>
+          <select id="devGroup" class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">IP Address / Host</label>
+            <input type="text" id="devIp" placeholder="172.16.6.96" required
+              class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Port HTTP (ISAPI)</label>
+            <input type="number" id="devHttpPort" value="80" required
+              class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Username NVR</label>
+            <input type="text" id="devUser" value="admin" required
+              class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Password NVR</label>
+            <input type="password" id="devPass" placeholder="Password NVR" required
+              class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Port RTSP (Streaming)</label>
+          <input type="number" id="devRtspPort" value="554" required
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="pt-3 flex items-center space-x-2">
+          <button type="button" id="testConnBtn"
+            class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-cctv-border text-xs font-semibold transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-bolt text-yellow-400"></i>
+            <span>Test Koneksi</span>
+          </button>
+          <button type="submit" id="saveDevBtn"
+            class="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition shadow-lg shadow-brand-500/20 flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Simpan & Auto-Scan Channel NVR</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT KAMERA (Rename & Tag) -->
+  <div id="editCameraModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-cctv-panel border border-cctv-border rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-cctv-border">
+        <h3 class="font-bold text-white text-base flex items-center space-x-2">
+          <i class="fa-solid fa-pen-to-square text-brand-500"></i>
+          <span>Ubah Nama Kamera</span>
+        </h3>
+        <button onclick="closeModal('editCameraModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="editCameraForm" class="space-y-3">
+        <input type="hidden" id="editCamId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Kamera</label>
+          <input type="text" id="editCamName" required
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Grup Lokasi</label>
+          <select id="editCamGroup" class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tags (Pencarian)</label>
+          <input type="text" id="editCamTags" placeholder="kasir, lantai 1, pintu keluar"
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('editCameraModal')" class="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 text-xs">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: KELOLA GRUP -->
+  <div id="addGroupModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-cctv-panel border border-cctv-border rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-cctv-border">
+        <h3 class="font-bold text-white text-base">Kelola Grup Lokasi</h3>
+        <button onclick="closeModal('addGroupModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="addGroupForm" class="flex space-x-2">
+        <input type="text" id="newGroupName" placeholder="Nama grup baru (misal: Cabang Glodok)" required
+          class="flex-1 bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+        <button type="submit" class="px-3 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold">+ Tambah</button>
+      </form>
+
+      <div id="groupsListModal" class="max-h-60 overflow-y-auto space-y-1.5 divide-y divide-cctv-border">
+        <!-- List of groups with delete button -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TAMBAH USER -->
+  <div id="addUserModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-cctv-panel border border-cctv-border rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-cctv-border">
+        <h3 class="font-bold text-white text-base">Tambah Akun Pengguna</h3>
+        <button onclick="closeModal('addUserModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="addUserForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Lengkap</label>
+          <input type="text" id="usrFullName" placeholder="Petugas Security 1" required
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Username</label>
+          <input type="text" id="usrUsername" placeholder="user_security" required
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+          <input type="password" id="usrPassword" required
+            class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Role / Peran</label>
+          <select id="usrRole" class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+            <option value="user">User Biasa (View & Playback)</option>
+            <option value="admin">Administrator (Akses Penuh)</option>
+          </select>
+        </div>
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('addUserModal')" class="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 text-xs">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold">Simpan Akun</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PINDAH / MASUKKAN NVR KE GRUP -->
+  <div id="assignNvrGroupModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-cctv-panel border border-cctv-border rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-cctv-border pb-3">
+        <h3 class="font-bold text-white text-sm flex items-center space-x-2">
+          <i class="fa-solid fa-folder-tree text-amber-400"></i>
+          <span>Pindahkan NVR ke Grup</span>
+        </h3>
+        <button onclick="closeModal('assignNvrGroupModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="assignNvrGroupForm" onsubmit="handleAssignNvrGroup(event)" class="space-y-3">
+        <input type="hidden" id="assignDevId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Perangkat NVR</label>
+          <input type="text" id="assignDevName" readonly class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-xs text-slate-300 font-medium">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Folder / Grup</label>
+          <select id="assignGroupSelect" class="w-full bg-slate-900 border border-cctv-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+            <option value="">-- Tanpa Grup (Umum) --</option>
+          </select>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-cctv-border">
+          <button type="button" onclick="closeModal('assignNvrGroupModal')" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs">Batal</button>
+          <button type="submit" class="px-4 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm p-4 rounded-xl shadow-2xl text-sm border flex items-center space-x-3 transition-all duration-300"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

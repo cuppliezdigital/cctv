@@ -1,0 +1,544 @@
+/* Custom CCTV Dark Theme Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0f17;
+}
+::-webkit-scrollbar-thumb {
+  background: #202d42;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Nav Tab Active States */
+.nav-tab.active {
+  background-color: #1e293b;
+  color: #34d399;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+.nav-tab:not(.active) {
+  color: #94a3b8;
+}
+.nav-tab:not(.active):hover {
+  color: #ffffff;
+  background-color: #1e293b50;
+}
+
+/* Group Pill Active */
+.group-pill.active {
+  background-color: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+.group-pill:not(.active) {
+  background-color: #0f172a;
+  color: #94a3b8;
+  border: 1px solid #202d42;
+}
+.group-pill:not(.active):hover {
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+/* CCTV Video Feed Card Styling */
+.cctv-card {
+  position: relative;
+  background-color: #131b2a;
+  border: 1px solid #202d42;
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+}
+.cctv-card:hover {
+  border-color: #10b98180;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
+}
+
+/* CCTV Screen Area */
+.cctv-screen {
+  position: relative;
+  background: radial-gradient(circle at center, #1a2233 0%, #0d121d 100%);
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#playbackPlayerContainer {
+  aspect-ratio: auto !important;
+}
+
+#cameraGrid.grid-cols-1 {
+  height: 100%;
+  overflow: hidden !important;
+}
+#cameraGrid.grid-cols-1 > .cctv-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+#cameraGrid.grid-cols-1 > .cctv-card .cctv-screen {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+/* Scanline Effect */
+.cctv-screen::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+/* OSD Overlay */
+.cctv-osd {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #38bdf8;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Blinking REC dot */
+.rec-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-right: 4px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Modal animation */
+.modal-enter {
+  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* CCTV Player Component & Universal Video Styling (Clean Without Browser Scrubber/MSE) */
+cctv-player, video-rtc {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: #000000;
+}
+
+cctv-player video, video-rtc video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  background-color: #000000 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide native HTML5 video controls and scrubber */
+cctv-player video::-webkit-media-controls,
+cctv-player video::-webkit-media-controls-enclosure,
+cctv-player video::-webkit-media-controls-panel,
+video-rtc video::-webkit-media-controls,
+video-rtc video::-webkit-media-controls-enclosure,
+video-rtc video::-webkit-media-controls-panel {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Playback CCTV Grid Matrix Layouts (1x1, 2x2, 3x3, 4x4) */
+#playbackPlayerContainer {
+  aspect-ratio: auto !important;
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background-color: #000000 !important;
+  position: relative !important;
+}
+
+.pb-matrix {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  margin: auto;
+  gap: 4px;
+  background-color: #0b0f17;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.pb-grid-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.pb-grid-4 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.pb-grid-9 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.pb-grid-16 {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+}
+
+/* Playback Slot Cells */
+.pb-slot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pb-slot:hover {
+  border-color: #334155;
+}
+
+.pb-slot.active {
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Playback Slot Header (In normal flex flow above the video, NEVER covers video OSD timestamp) */
+.pb-slot-header {
+  position: relative !important;
+  width: 100% !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  z-index: 10 !important;
+  flex-shrink: 0 !important;
+  background-color: #0b1120 !important;
+  border-bottom: 1px solid #1e293b !important;
+  padding: 3px 8px !important;
+  box-sizing: border-box !important;
+}
+
+/* In 1x1 mode: hide the slot header completely because active camera info is already in the main toolbar above */
+.pb-grid-1 .pb-slot-header {
+  display: none !important;
+}
+
+/* Live View Grid Layouts (1x1, 2x2, 3x3, 4x4) - Fits 100% Viewport without Truncation or Unequal Rows */
+#cameraGrid.live-grid-1 {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+}
+
+#cameraGrid.live-grid-4 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  gap: 8px !important;
+}
+
+#cameraGrid.live-grid-9 {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  gap: 6px !important;
+}
+
+#cameraGrid.live-grid-16 {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  gap: 4px !important;
+}
+
+/* Equal Card Sizing for All Cells in Live View (Top and Bottom rows strictly identical) */
+#cameraGrid > .cctv-card {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-radius: 0.65rem !important;
+}
+
+#cameraGrid > .cctv-card .cctv-screen {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  aspect-ratio: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #000000 !important;
+  overflow: hidden !important;
+}
+
+#cameraGrid > .cctv-card .cctv-screen img.cam-live-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+#cameraGrid > .cctv-card .cctv-screen cctv-player {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Compact headers and footers on dense grids (3x3 and 4x4) */
+#cameraGrid.live-grid-9 > .cctv-card .cctv-card-header,
+#cameraGrid.live-grid-16 > .cctv-card .cctv-card-header {
+  padding: 4px 8px !important;
+}
+
+#cameraGrid.live-grid-9 > .cctv-card .cctv-card-footer,
+#cameraGrid.live-grid-16 > .cctv-card .cctv-card-footer {
+  padding: 2px 8px !important;
+  font-size: 9px !important;
+}
+
+/* Playback Speed Button Active */
+.pb-speed-btn.active {
+  background-color: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+/* Hikvision 24-Hour Timeline Bar (Center-Fixed Needle & Draggable Track) */
+#timelineScrollerWrapper {
+  background: #060913;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  user-select: none;
+  touch-action: pan-y;
+}
+
+#timelineTrack {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.tl-hour-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-left: 4px;
+  padding-bottom: 2px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tl-sub-tick {
+  position: absolute;
+  top: 0;
+  height: 8px;
+  border-left: 1px solid #1e293b;
+  pointer-events: none;
+}
+
+.tl-recording-segment {
+  position: absolute;
+  top: 24px;
+  height: 14px;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  border: 1px solid #60a5fa;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+  pointer-events: none;
+}
+
+#timelinePlayhead {
+  z-index: 25;
+  pointer-events: none;
+}
+
+/* Hikvision Calendar Styling */
+.cal-day-btn {
+  position: relative;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+  font-size: 11px;
+}
+
+.cal-day-btn:hover:not(:disabled) {
+  background-color: #1e293b;
+  color: #38bdf8;
+}
+
+.cal-day-btn.active {
+  background-color: #f59e0b;
+  color: #020617;
+  font-weight: bold;
+}
+
+.cal-record-dot {
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  box-shadow: 0 0 5px #3b82f6;
+}
+
+/* Playback Fullscreen Mode (Encompasses Video, Timeline Bar, and Controls) */
+#playbackScreenCard:fullscreen,
+#playbackScreenCard:-webkit-full-screen,
+#playbackScreenCard.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background-color: #000000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 999999 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+#playbackScreenCard:fullscreen #playbackTopToolbar,
+#playbackScreenCard:-webkit-full-screen #playbackTopToolbar,
+#playbackScreenCard.is-fullscreen #playbackTopToolbar {
+  flex-shrink: 0 !important;
+  background-color: rgba(11, 17, 32, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  border-bottom: 1px solid #1e293b !important;
+  padding: 6px 12px !important;
+  z-index: 30 !important;
+}
+
+#playbackScreenCard:fullscreen #playbackPlayerContainer,
+#playbackScreenCard:-webkit-full-screen #playbackPlayerContainer,
+#playbackScreenCard.is-fullscreen #playbackPlayerContainer {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #000000 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#playbackScreenCard:fullscreen #playbackTimelineContainer,
+#playbackScreenCard:-webkit-full-screen #playbackTimelineContainer,
+#playbackScreenCard.is-fullscreen #playbackTimelineContainer {
+  flex-shrink: 0 !important;
+  background-color: #030712 !important;
+  border-top: 1px solid rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.8) !important;
+  padding: 6px 12px !important;
+  z-index: 30 !important;
+}
+
+#playbackScreenCard:fullscreen #playbackToolbar,
+#playbackScreenCard:-webkit-full-screen #playbackToolbar,
+#playbackScreenCard.is-fullscreen #playbackToolbar {
+  flex-shrink: 0 !important;
+  background-color: #0b1120 !important;
+  border-top: 1px solid #1e293b !important;
+  padding: 8px 12px !important;
+  z-index: 30 !important;
+}
+
+
