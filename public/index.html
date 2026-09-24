@@ -60,7 +60,7 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
               <i class="fa-solid fa-user"></i>
             </span>
-            <input type="text" id="loginUsername" value="admin" required
+            <input type="text" id="loginUsername" placeholder="Masukkan username" required autocomplete="username"
               class="w-full bg-slate-900 border border-cctv-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white placeholder-slate-500">
           </div>
         </div>
@@ -71,10 +71,9 @@
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
               <i class="fa-solid fa-lock"></i>
             </span>
-            <input type="password" id="loginPassword" value="admin123" required
+            <input type="password" id="loginPassword" placeholder="Masukkan password" required autocomplete="current-password"
               class="w-full bg-slate-900 border border-cctv-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white placeholder-slate-500">
           </div>
-          <p class="text-xs text-slate-500 mt-1">Default: admin / admin123</p>
         </div>
 
         <button type="submit" id="loginBtn"
