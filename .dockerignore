@@ -1,0 +1,12 @@
+node_modules
+data/*.sqlite
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
+downloads/*
+!downloads/.gitkeep
+bin/*.exe
+test_frame.jpg
+.git
+.kilo
+*.log

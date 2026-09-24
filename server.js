@@ -172,15 +172,40 @@ server.listen(config.PORT, () => {
   // Start go2rtc media engine with auto-restart
   const { spawn } = require('child_process');
   const fs = require('fs');
-  const go2rtcBin = path.join(__dirname, 'bin', 'go2rtc.exe');
+
+  // Cross-platform go2rtc detection (Windows: bin/go2rtc.exe, Linux/Docker: /usr/local/bin/go2rtc or PATH)
+  let go2rtcBin = path.join(__dirname, 'bin', 'go2rtc.exe');
+  if (process.platform !== 'win32' || !fs.existsSync(go2rtcBin)) {
+    if (fs.existsSync('/usr/local/bin/go2rtc')) {
+      go2rtcBin = '/usr/local/bin/go2rtc';
+    } else if (fs.existsSync(path.join(__dirname, 'bin', 'go2rtc'))) {
+      go2rtcBin = path.join(__dirname, 'bin', 'go2rtc');
+    } else {
+      go2rtcBin = 'go2rtc';
+    }
+  }
+
+  // Auto-adapt ffmpeg binary in go2rtc.yaml for Linux / Railway
+  try {
+    const configPath = path.join(__dirname, 'go2rtc.yaml');
+    if (fs.existsSync(configPath) && process.platform !== 'win32') {
+      let yamlContent = fs.readFileSync(configPath, 'utf8');
+      if (yamlContent.includes('./bin/ffmpeg.exe')) {
+        yamlContent = yamlContent.replace(/bin:\s*\.\/bin\/ffmpeg\.exe/g, 'bin: ffmpeg');
+        fs.writeFileSync(configPath, yamlContent);
+      }
+    }
+  } catch (err) {
+    console.warn('[MediaEngine] Notice adapting go2rtc.yaml for Linux:', err.message);
+  }
+
   let go2rtcProcess = null;
 
   function startGo2rtc() {
-    if (!fs.existsSync(go2rtcBin)) return;
     try {
       const configPath = path.join(__dirname, 'go2rtc.yaml');
       go2rtcProcess = spawn(go2rtcBin, ['-c', configPath], { cwd: __dirname });
-      console.log('[MediaEngine] go2rtc WebRTC / RTSP Gateway aktif di port 1984');
+      console.log(`[MediaEngine] go2rtc WebRTC / RTSP Gateway aktif di port 1984 (bin: ${go2rtcBin})`);
 
       go2rtcProcess.stderr.on('data', (d) => {
         const msg = d.toString().trim();
