@@ -1455,7 +1455,9 @@ const tlState = {
   dragStartSec: 0,
   hasMoved: false,
   activeClipStartMs: 0,
-  activeClipEndMs: 0
+  activeClipEndMs: 0,
+  lastRenderedIntSec: -1,
+  seekDebounceTimer: null
 };
 
 function formatHHMMSS(sec) {
@@ -1520,13 +1522,13 @@ function initTimelineControls() {
 
         const pps = getTimelinePPS();
         const deltaSec = - (dx / pps); // Drag left -> time moves forward, drag right -> time moves back
-        const targetSec = Math.max(0, Math.min(86400, Math.round(tlState.dragStartSec + deltaSec)));
+        const targetSec = Math.max(0, Math.min(86400, tlState.dragStartSec + deltaSec));
 
         tlState.currentSecondInDay = targetSec;
         updateTimelinePlayhead(targetSec, false);
 
         const timeInput = document.getElementById('pbTimeInput');
-        if (timeInput) timeInput.value = formatHHMMSS(targetSec);
+        if (timeInput) timeInput.value = formatHHMMSS(Math.floor(targetSec));
       };
 
       const onMouseUp = (ev) => {
@@ -1535,24 +1537,26 @@ function initTimelineControls() {
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
 
-        if (tlState.hasMoved) {
-          // Dragging finished: seek immediately in memory if clips are cached
-          seekPlaybackToTime(tlState.currentSecondInDay);
-        } else {
+        let targetSec = tlState.currentSecondInDay;
+        if (!tlState.hasMoved) {
           // Clicked at specific position on track: center that time under needle
           const rect = trackWrapper.getBoundingClientRect();
           const pps = getTimelinePPS();
           const distFromCenter = ev.clientX - (rect.left + rect.width / 2);
-          const clickedSec = Math.max(0, Math.min(86400, Math.round(tlState.dragStartSec + (distFromCenter / pps))));
+          targetSec = Math.max(0, Math.min(86400, tlState.dragStartSec + (distFromCenter / pps)));
 
-          tlState.currentSecondInDay = clickedSec;
-          updateTimelinePlayhead(clickedSec, true);
-
-          const timeInput = document.getElementById('pbTimeInput');
-          if (timeInput) timeInput.value = formatHHMMSS(clickedSec);
-
-          seekPlaybackToTime(clickedSec);
+          tlState.currentSecondInDay = targetSec;
+          updateTimelinePlayhead(targetSec, true);
         }
+
+        const timeInput = document.getElementById('pbTimeInput');
+        if (timeInput) timeInput.value = formatHHMMSS(Math.floor(targetSec));
+
+        // Debounce seek: prevents multiple rapid seeks from spamming the NVR hard drive
+        clearTimeout(tlState.seekDebounceTimer);
+        tlState.seekDebounceTimer = setTimeout(() => {
+          seekPlaybackToTime(Math.floor(targetSec));
+        }, 120);
       };
 
       window.addEventListener('mousemove', onMouseMove);
@@ -1597,13 +1601,16 @@ function initTimelineControls() {
     }
     updateTimelinePlayhead(tlState.currentSecondInDay);
   });
+
+  // Start 60fps smooth timeline tracking loop
+  startTimelineSyncLoop();
 }
 
 function updateZoomUI() {
   const zoom = TL_ZOOM_LEVELS[tlState.zoomIndex];
   const label = document.getElementById('pbZoomScaleLabel');
   if (label) {
-    label.textContent = `Skala: ${zoom.label}`;
+    label.textContent = zoom.label;
   }
 
   renderTimelineRuler();
@@ -1701,6 +1708,30 @@ function renderTimelineRecordings(recordings, dateStr) {
   });
 }
 
+let tlSyncRaf = null;
+
+function startTimelineSyncLoop() {
+  if (tlSyncRaf) cancelAnimationFrame(tlSyncRaf);
+
+  function syncFrame() {
+    // Only track if playback tab is visible, not currently user-dragging, and active clip is valid
+    if (state.activeTab === 'playback' && !tlState.isDragging && tlState.activeClipStartMs && tlState.currentDateStr) {
+      const video = getActivePlaybackVideo();
+      if (video && !video.paused && !video.ended && video.readyState >= 2) {
+        const dayStartMs = new Date(`${tlState.currentDateStr}T00:00:00`).getTime();
+        // Exact sub-second float progress from video.currentTime
+        const currentSecInDay = ((tlState.activeClipStartMs - dayStartMs) / 1000) + video.currentTime;
+        if (currentSecInDay >= 0 && currentSecInDay <= 86400) {
+          updateTimelinePlayhead(currentSecInDay, false);
+        }
+      }
+    }
+    tlSyncRaf = requestAnimationFrame(syncFrame);
+  }
+
+  tlSyncRaf = requestAnimationFrame(syncFrame);
+}
+
 function updateTimelinePlayhead(secInDay, reRenderTicks = true) {
   tlState.currentSecondInDay = secInDay;
 
@@ -1712,20 +1743,25 @@ function updateTimelinePlayhead(secInDay, reRenderTicks = true) {
   const wrapperWidth = wrapper ? (wrapper.clientWidth || 1000) : 1000;
   const pps = getTimelinePPS();
 
-  // Shift track underneath the center needle (Needle is locked at wrapperWidth / 2)
+  // Shift track underneath the center needle with sub-pixel float precision for 60fps buttery smooth scroll
   if (track) {
     const trackOffset = (wrapperWidth / 2) - (secInDay * pps);
-    track.style.transform = `translateX(${trackOffset}px)`;
+    track.style.transform = `translateX(${trackOffset.toFixed(2)}px)`;
   }
 
-  const timeStr = formatHHMMSS(secInDay);
-  const dateStr = tlState.currentDateStr || document.getElementById('pbDateInput')?.value || new Date().toISOString().slice(0, 10);
+  // Update text label only when the integer second advances to prevent unnecessary DOM mutations
+  const intSec = Math.floor(secInDay);
+  if (intSec !== tlState.lastRenderedIntSec || reRenderTicks) {
+    tlState.lastRenderedIntSec = intSec;
+    const timeStr = formatHHMMSS(intSec);
+    const dateStr = tlState.currentDateStr || document.getElementById('pbDateInput')?.value || new Date().toISOString().slice(0, 10);
 
-  if (centerDisplay) {
-    centerDisplay.textContent = `${dateStr} ${timeStr}`;
-  }
-  if (labelTop) {
-    labelTop.textContent = timeStr;
+    if (centerDisplay) {
+      centerDisplay.textContent = `${dateStr} ${timeStr}`;
+    }
+    if (labelTop) {
+      labelTop.textContent = timeStr;
+    }
   }
 
   if (reRenderTicks) {
@@ -1736,7 +1772,7 @@ function updateTimelinePlayhead(secInDay, reRenderTicks = true) {
 function updateTimelinePlayheadByMs(currentMs) {
   if (!tlState.currentDateStr) return;
   const dayStartMs = new Date(`${tlState.currentDateStr}T00:00:00`).getTime();
-  const secInDay = Math.max(0, Math.min(86400, Math.round((currentMs - dayStartMs) / 1000)));
+  const secInDay = Math.max(0, Math.min(86400, (currentMs - dayStartMs) / 1000));
   updateTimelinePlayhead(secInDay, false);
 }
 
@@ -2154,75 +2190,96 @@ function parseCameraTimeString(str) {
   return new Date(str).getTime();
 }
 
+let isSeekingLocked = false;
+let pendingSeekSec = null;
+
 // Fast in-memory timeline seeking without repeating full NVR disk search
 async function seekPlaybackToTime(targetSecInDay) {
-  const deviceId = document.getElementById('pbDeviceSelect')?.value;
-  const channelNo = document.getElementById('pbChannelSelect')?.value;
-  const dateStr = document.getElementById('pbDateInput')?.value;
-
-  if (!deviceId || !channelNo || !dateStr) {
-    return handlePlaybackSearch();
+  if (isSeekingLocked) {
+    pendingSeekSec = targetSecInDay;
+    return;
   }
+  isSeekingLocked = true;
 
-  const cacheKey = `${deviceId}_${channelNo}_${dateStr}`;
-  if (state.playbackClipsKey === cacheKey && state.playbackClips && state.playbackClips.length > 0) {
-    const selectedOpt = document.querySelector(`#pbChannelSelect option[value="${channelNo}"]`);
-    const camId = selectedOpt ? selectedOpt.dataset.camId : null;
-    const camName = selectedOpt ? selectedOpt.textContent : `Channel ${channelNo}`;
+  try {
+    const deviceId = document.getElementById('pbDeviceSelect')?.value;
+    const channelNo = document.getElementById('pbChannelSelect')?.value;
+    const dateStr = document.getElementById('pbDateInput')?.value;
 
-    const timeStr = formatHHMMSS(targetSecInDay);
-    const targetDateStr = `${dateStr}T${timeStr}`;
-    const targetTimeMs = parseCameraTimeString(targetDateStr);
-
-    let bestClip = null;
-    for (const clip of state.playbackClips) {
-      const sMs = parseCameraTimeString(clip.startTime);
-      const eMs = parseCameraTimeString(clip.endTime);
-      if (targetTimeMs >= sMs && targetTimeMs <= eMs) {
-        bestClip = clip;
-        break;
-      }
+    if (!deviceId || !channelNo || !dateStr) {
+      await handlePlaybackSearch();
+      return;
     }
 
-    let requestedStart;
-    if (bestClip) {
-      requestedStart = targetDateStr;
-    } else {
-      let minDiff = Infinity;
+    const cacheKey = `${deviceId}_${channelNo}_${dateStr}`;
+    if (state.playbackClipsKey === cacheKey && state.playbackClips && state.playbackClips.length > 0) {
+      const selectedOpt = document.querySelector(`#pbChannelSelect option[value="${channelNo}"]`);
+      const camId = selectedOpt ? selectedOpt.dataset.camId : null;
+      const camName = selectedOpt ? selectedOpt.textContent : `Channel ${channelNo}`;
+
+      const timeStr = formatHHMMSS(targetSecInDay);
+      const targetDateStr = `${dateStr}T${timeStr}`;
+      const targetTimeMs = parseCameraTimeString(targetDateStr);
+
+      let bestClip = null;
       for (const clip of state.playbackClips) {
         const sMs = parseCameraTimeString(clip.startTime);
         const eMs = parseCameraTimeString(clip.endTime);
-        const diff = Math.min(Math.abs(targetTimeMs - sMs), Math.abs(targetTimeMs - eMs));
-        if (diff < minDiff) {
-          minDiff = diff;
+        if (targetTimeMs >= sMs && targetTimeMs <= eMs) {
           bestClip = clip;
+          break;
         }
       }
-      requestedStart = bestClip ? bestClip.startTime : targetDateStr;
+
+      let requestedStart;
       if (bestClip) {
-        showToast(`Jam terdekat di NVR: ${bestClip.startTime.replace(/.*T/, '').replace(/Z/, '')}`, 'info');
+        requestedStart = targetDateStr;
+      } else {
+        let minDiff = Infinity;
+        for (const clip of state.playbackClips) {
+          const sMs = parseCameraTimeString(clip.startTime);
+          const eMs = parseCameraTimeString(clip.endTime);
+          const diff = Math.min(Math.abs(targetTimeMs - sMs), Math.abs(targetTimeMs - eMs));
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestClip = clip;
+          }
+        }
+        requestedStart = bestClip ? bestClip.startTime : targetDateStr;
+        if (bestClip) {
+          showToast(`Jam terdekat di NVR: ${bestClip.startTime.replace(/.*T/, '').replace(/Z/, '')}`, 'info');
+        }
+      }
+
+      if (bestClip) {
+        tlState.activeClipStartMs = parseCameraTimeString(requestedStart);
+        tlState.activeClipEndMs = parseCameraTimeString(bestClip.endTime);
+        updateTimelinePlayhead(targetSecInDay, false);
+
+        await startPlaybackInSlot(activePbSlot, {
+          deviceId,
+          channelNo,
+          camId,
+          camName,
+          startTime: requestedStart,
+          endTime: bestClip.endTime,
+          playbackURI: bestClip.playbackURI
+        }, true);
+        return;
       }
     }
 
-    if (bestClip) {
-      tlState.activeClipStartMs = parseCameraTimeString(requestedStart);
-      tlState.activeClipEndMs = parseCameraTimeString(bestClip.endTime);
-      updateTimelinePlayhead(targetSecInDay, false);
-
-      await startPlaybackInSlot(activePbSlot, {
-        deviceId,
-        channelNo,
-        camId,
-        camName,
-        startTime: requestedStart,
-        endTime: bestClip.endTime,
-        playbackURI: bestClip.playbackURI
-      }, true);
-      return;
+    await handlePlaybackSearch();
+  } catch (err) {
+    console.warn('Seek error:', err);
+  } finally {
+    isSeekingLocked = false;
+    if (pendingSeekSec !== null) {
+      const nextSec = pendingSeekSec;
+      pendingSeekSec = null;
+      seekPlaybackToTime(nextSec);
     }
   }
-
-  await handlePlaybackSearch();
 }
 
 // =========================================================================
@@ -2375,7 +2432,8 @@ async function startPlaybackInSlot(slotIdx, params, isSeeking = false) {
         if (typeof window.mountCctvPlayer === 'function') {
           window.mountCctvPlayer(playerBody, res.streamName, {
             title: params.camName,
-            isSeeking: true
+            isSeeking: true,
+            timeStr: formatHHMMSS(Math.floor(tlState.currentSecondInDay))
           });
         }
       } else {
@@ -2425,13 +2483,13 @@ function updatePlayPauseBtnUI(isPaused) {
   const label = document.getElementById('pbLabelPlayPause');
   const btn = document.getElementById('pbBtnPlayPause');
   if (isPaused) {
-    if (icon) icon.className = 'fa-solid fa-play text-xs';
+    if (icon) icon.className = 'fa-solid fa-play text-[11px]';
     if (label) label.textContent = 'Putar';
-    if (btn) btn.className = 'h-7 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-1.5 transition shadow';
+    if (btn) btn.className = 'h-7 px-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-1.5 transition shadow active:scale-95';
   } else {
-    if (icon) icon.className = 'fa-solid fa-pause text-xs';
+    if (icon) icon.className = 'fa-solid fa-pause text-[11px]';
     if (label) label.textContent = 'Jeda';
-    if (btn) btn.className = 'h-7 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow';
+    if (btn) btn.className = 'h-7 px-3 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow active:scale-95';
   }
 }
 
@@ -2822,12 +2880,77 @@ function handlePlaybackFullscreenChange() {
   }, 100);
 }
 
+function takePlaybackSnapshot() {
+  const video = getActivePlaybackVideo();
+  if (!video || !video.videoWidth) {
+    showToast('Pilih dan putar rekaman terlebih dahulu untuk mengambil foto', 'warning');
+    return;
+  }
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const a = document.createElement('a');
+    const timeStr = (tlState.currentDateStr || 'cctv') + '_' + formatHHMMSS(tlState.currentSecondInDay).replace(/:/g, '-');
+    a.href = dataUrl;
+    a.download = `snapshot_${timeStr}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showPlaybackHUD('Foto Tersimpan', 'fa-solid fa-camera');
+    showToast('Foto tangkapan layar rekaman berhasil diunduh', 'success');
+  } catch (err) {
+    console.warn('Snapshot error:', err);
+    showToast('Gagal mengambil foto: ' + err.message, 'error');
+  }
+}
+
+function togglePlaybackAudio() {
+  const video = getActivePlaybackVideo();
+  if (!video) {
+    showToast('Pilih dan putar rekaman terlebih dahulu', 'warning');
+    return;
+  }
+  video.muted = !video.muted;
+  const icon = document.getElementById('pbIconAudio');
+  const btn = document.getElementById('pbBtnAudio');
+  if (icon) {
+    icon.className = video.muted ? 'fa-solid fa-volume-xmark text-[11px]' : 'fa-solid fa-volume-high text-[11px]';
+  }
+  if (btn) {
+    btn.classList.toggle('text-amber-400', !video.muted);
+    btn.classList.toggle('border-amber-400/50', !video.muted);
+  }
+  showPlaybackHUD(video.muted ? 'Audio Mati' : 'Audio Aktif', video.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high');
+}
+
 function initPlaybackToolbar() {
   const btnStop = document.getElementById('pbBtnStop');
   if (btnStop) btnStop.addEventListener('click', stopPlayback);
 
   const btnPlayPause = document.getElementById('pbBtnPlayPause');
   if (btnPlayPause) btnPlayPause.addEventListener('click', togglePlaybackPlayPause);
+
+  const btnSnapshot = document.getElementById('pbBtnSnapshot');
+  if (btnSnapshot) btnSnapshot.addEventListener('click', takePlaybackSnapshot);
+
+  const btnAudio = document.getElementById('pbBtnAudio');
+  if (btnAudio) btnAudio.addEventListener('click', togglePlaybackAudio);
+
+  const btnDlBottom = document.getElementById('pbBtnDownloadBottom');
+  if (btnDlBottom) {
+    btnDlBottom.addEventListener('click', () => {
+      const slot = pbSlots[activePbSlot];
+      if (slot && slot.isPlaying) {
+        quickDownloadClip(slot.deviceId, slot.channelNo, slot.startTime, slot.endTime);
+      } else {
+        showToast('Pilih dan putar rekaman terlebih dahulu untuk mengunduh', 'warning');
+      }
+    });
+  }
 
   const btnStepBack = document.getElementById('pbBtnStepBack');
   if (btnStepBack) btnStepBack.addEventListener('click', () => stepPlayback(-10));

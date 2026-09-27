@@ -63,15 +63,37 @@ window.mountCctvPlayer = function(container, streamName, options = {}) {
 
   const existingPlayer = container.querySelector('cctv-player');
   if (existingPlayer && options.isSeeking) {
-    // Smooth seek/step: Keep the existing video frame on screen, reconnect stream without black flash or loading spinner
+    // Smooth seek/step: Keep the existing video frame on screen with subtle seeking indicator
+    let seekOverlay = container.querySelector('.cctv-seek-overlay');
+    if (!seekOverlay) {
+      seekOverlay = document.createElement('div');
+      seekOverlay.className = 'cctv-seek-overlay absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/50 backdrop-blur-[1px] text-amber-400 select-none pointer-events-none transition-opacity duration-200';
+      seekOverlay.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin text-2xl mb-1.5 text-amber-400"></i>
+        <span class="text-xs font-semibold text-white tracking-wide">Memuat Frame ${options.timeStr || ''}...</span>
+      `;
+      container.appendChild(seekOverlay);
+    } else {
+      seekOverlay.style.opacity = '1';
+      const label = seekOverlay.querySelector('span');
+      if (label) label.textContent = `Memuat Frame ${options.timeStr || ''}...`;
+    }
+
+    const onPlayOnce = () => {
+      if (seekOverlay && seekOverlay.parentElement) {
+        seekOverlay.style.opacity = '0';
+        setTimeout(() => { if (seekOverlay.parentElement) seekOverlay.remove(); }, 250);
+      }
+      existingPlayer.removeEventListener('cctv-playing', onPlayOnce);
+    };
+    existingPlayer.addEventListener('cctv-playing', onPlayOnce);
+
     try {
       if (typeof existingPlayer.ondisconnect === 'function') {
         existingPlayer.ondisconnect();
       }
-      existingPlayer.src = `/media/api/ws?src=${encodeURIComponent(streamName)}&mode=webrtc,mse,mp4`;
-      if (typeof existingPlayer.onconnect === 'function') {
-        existingPlayer.onconnect();
-      }
+      // Unique timestamp query param forces VideoRTC to trigger fresh connection without skipping
+      existingPlayer.src = `/media/api/ws?src=${encodeURIComponent(streamName)}&mode=webrtc,mse,mp4&t=${Date.now()}`;
     } catch (e) {
       console.warn('Smooth reconnect error:', e);
     }

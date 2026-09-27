@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title CCTV Central Hub - Hikvision
 color 0A
 echo ====================================================

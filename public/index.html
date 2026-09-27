@@ -411,153 +411,167 @@
             </div>
           </div>
 
-          <!-- HIKVISION 24-HOUR INTERACTIVE TIMELINE SCROLLER (CENTER-FIXED NEEDLE) -->
-          <div id="playbackTimelineContainer" class="bg-slate-950 border-t border-cctv-border select-none relative px-3 py-1.5 flex-shrink-0">
-            <!-- Top Bar: Zoom Scale & Time Display -->
-            <div class="flex items-center justify-between text-xs mb-1 px-0.5">
-              <div class="flex items-center space-x-2">
-                <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1">
-                  <i class="fa-solid fa-timeline text-amber-400"></i>
-                  <span>Linimasa NVR:</span>
-                </span>
-                <span id="pbTimelineCurrentTime" class="font-mono text-xs font-bold text-amber-400 bg-slate-900 px-2 py-0.5 rounded border border-cctv-border">
-                  00:00:00
-                </span>
-                <span class="text-[10px] text-slate-500 hidden sm:inline">
-                  (Klik kiri tahan & geser trek ke kiri/kanan untuk atur waktu)
-                </span>
-              </div>
-
-              <!-- Timeline Zoom Buttons: Minus & Plus (24 Jam s/d 1 Menit) -->
-              <div class="flex items-center space-x-2 bg-slate-900 px-2.5 py-1 rounded-lg border border-cctv-border text-xs">
-                <span id="pbZoomScaleLabel" class="text-[11px] font-mono text-amber-400 font-bold">Skala: 24 Jam</span>
-                <div class="flex items-center space-x-1">
-                  <button type="button" id="tlBtnZoomOut" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white flex items-center justify-center font-bold text-xs border border-slate-700 transition active:scale-95" title="Perkecil Skala (-)">
-                    <i class="fa-solid fa-minus text-[10px]"></i>
-                  </button>
-                  <button type="button" id="tlBtnZoomIn" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white flex items-center justify-center font-bold text-xs border border-slate-700 transition active:scale-95" title="Perbesar Skala (+) s/d 1 Menit Detik">
-                    <i class="fa-solid fa-plus text-[10px]"></i>
-                  </button>
-                </div>
+          <!-- HIKVISION PLAYBACK CONTROL TOOLBAR (Di bawah layar video) -->
+          <div id="playbackToolbar" class="bg-slate-900 border-t border-cctv-border px-3 py-1 flex items-center justify-between select-none flex-shrink-0 gap-2">
+            <!-- Left: Playback CCTV Grid Switcher (1x1, 2x2, 3x3, 4x4) -->
+            <div class="flex items-center space-x-1">
+              <div class="flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-xs">
+                <button type="button" class="pb-grid-btn px-2 py-0.5 rounded text-[11px] text-slate-400 hover:text-white transition font-mono font-semibold" data-grid="1" onclick="setPlaybackGridSize(1)" title="1x1 Fokus Penuh">1x1</button>
+                <button type="button" class="pb-grid-btn active px-2 py-0.5 rounded text-[11px] bg-slate-800 text-amber-400 font-mono font-bold border border-amber-500/30 transition" data-grid="4" onclick="setPlaybackGridSize(4)" title="2x2 Grid (4 Kamera)">2x2</button>
+                <button type="button" class="pb-grid-btn px-2 py-0.5 rounded text-[11px] text-slate-400 hover:text-white transition font-mono font-semibold" data-grid="9" onclick="setPlaybackGridSize(9)" title="3x3 Grid (9 Kamera)">3x3</button>
+                <button type="button" class="pb-grid-btn px-2 py-0.5 rounded text-[11px] text-slate-400 hover:text-white transition font-mono font-semibold" data-grid="16" onclick="setPlaybackGridSize(16)" title="4x4 Grid (16 Kamera)">4x4</button>
               </div>
             </div>
 
+            <!-- Center: Hikvision Playback Transport Controls (◀|  ■  ◀◀  ▶/❚❚  ▶▶  |▶  Speed) -->
+            <div class="flex items-center space-x-1 sm:space-x-1.5">
+              <!-- Mundur 1 Frame Step Back -->
+              <button type="button" id="pbBtnFrameBack" title="Mundur 1 Frame (-0.04s) / Ctrl + Scroll Bawah"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 flex items-center justify-center transition border border-slate-700 active:scale-95 text-xs font-mono font-bold">
+                <i class="fa-solid fa-backward-step text-[10px]"></i>
+              </button>
+
+              <!-- Stop Button -->
+              <button type="button" id="pbBtnStop" title="Berhenti / Reset"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-rose-400 flex items-center justify-center transition border border-slate-700 active:scale-95 text-xs">
+                <i class="fa-solid fa-stop text-[10px]"></i>
+              </button>
+
+              <!-- Mundur Cepat 10s -->
+              <button type="button" id="pbBtnStepBack" title="Mundur 10 Detik"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700 active:scale-95 text-xs">
+                <i class="fa-solid fa-backward text-[10px]"></i>
+              </button>
+
+              <!-- Play / Pause Button (Hikvision Prominent Center Button) -->
+              <button type="button" id="pbBtnPlayPause" title="Jeda / Putar"
+                class="h-7 px-3 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow active:scale-95">
+                <i id="pbIconPlayPause" class="fa-solid fa-pause text-[11px]"></i>
+                <span id="pbLabelPlayPause" class="hidden sm:inline text-xs font-semibold">Jeda</span>
+              </button>
+
+              <!-- Maju Cepat 10s -->
+              <button type="button" id="pbBtnStepForward" title="Maju 10 Detik"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700 active:scale-95 text-xs">
+                <i class="fa-solid fa-forward text-[10px]"></i>
+              </button>
+
+              <!-- Maju 1 Frame Step Forward -->
+              <button type="button" id="pbBtnFrameForward" title="Maju 1 Frame (+0.04s) / Ctrl + Scroll Atas"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 flex items-center justify-center transition border border-slate-700 active:scale-95 text-xs font-mono font-bold">
+                <i class="fa-solid fa-forward-step text-[10px]"></i>
+              </button>
+
+              <div class="h-4 w-px bg-slate-700 mx-0.5 hidden sm:block"></div>
+
+              <!-- Speed Selector (-4x to 4x) -->
+              <div class="hidden sm:flex items-center space-x-0.5 bg-slate-950 p-0.5 rounded border border-slate-800 text-xs">
+                <button type="button" class="pb-speed-btn px-1.5 py-0.5 rounded text-[11px] font-mono text-slate-400 hover:text-white" data-speed="0.25">-4x</button>
+                <button type="button" class="pb-speed-btn px-1.5 py-0.5 rounded text-[11px] font-mono text-slate-400 hover:text-white" data-speed="0.5">-2x</button>
+                <button type="button" class="pb-speed-btn active px-2 py-0.5 rounded text-[11px] font-mono font-bold text-white bg-brand-500" data-speed="1.0">1x</button>
+                <button type="button" class="pb-speed-btn px-1.5 py-0.5 rounded text-[11px] font-mono text-slate-400 hover:text-white" data-speed="2.0">2x</button>
+                <button type="button" class="pb-speed-btn px-1.5 py-0.5 rounded text-[11px] font-mono text-slate-400 hover:text-white" data-speed="4.0">4x</button>
+              </div>
+            </div>
+
+            <!-- Right: Hikvision Utility Tools (Snapshot, Zoom, Audio, Download, Timeline Toggle, Fullscreen) -->
+            <div class="flex items-center space-x-1 sm:space-x-1.5">
+              <!-- Tangkap Foto / Snapshot -->
+              <button type="button" id="pbBtnSnapshot" title="Ambil Foto Tangkapan Layar (Snapshot)"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-sky-400 flex items-center justify-center transition border border-slate-700 text-xs">
+                <i class="fa-solid fa-camera text-[11px]"></i>
+              </button>
+
+              <!-- Digital Zoom Toggle Button -->
+              <button type="button" id="pbBtnZoomToggle" title="Mode Zoom Video (Klik untuk aktifkan, putar roda mouse untuk zoom)"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 flex items-center justify-center transition border border-slate-700 text-xs">
+                <i id="pbIconZoom" class="fa-solid fa-magnifying-glass text-[11px]"></i>
+              </button>
+
+              <!-- Audio Mute / Unmute -->
+              <button type="button" id="pbBtnAudio" title="Suara Video / Mute"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700 text-xs">
+                <i id="pbIconAudio" class="fa-solid fa-volume-high text-[11px]"></i>
+              </button>
+
+              <!-- Unduh Video Direct Download -->
+              <button type="button" id="pbBtnDownloadBottom" title="Unduh File Video Rekaman Ini"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 flex items-center justify-center transition border border-slate-700 text-xs">
+                <i class="fa-solid fa-download text-[11px]"></i>
+              </button>
+
+              <!-- Sembunyikan / Tampilkan Linimasa -->
+              <button type="button" id="pbBtnToggleTimeline" title="Tampilkan / Sembunyikan Linimasa NVR"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700 text-xs">
+                <i class="fa-solid fa-timeline text-amber-400 text-[11px]"></i>
+              </button>
+
+              <!-- Fullscreen Button -->
+              <button type="button" id="pbBtnFullscreen" title="Layar Penuh (F)"
+                class="h-7 w-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700 text-xs">
+                <i id="pbIconFullscreen" class="fa-solid fa-expand text-[11px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- HIKVISION 24-HOUR INTERACTIVE TIMELINE (CENTER-FIXED NEEDLE & CONTINUOUS STRIP) -->
+          <div id="playbackTimelineContainer" class="bg-slate-950 border-t border-slate-800 select-none relative flex-shrink-0">
             <!-- Timeline Track & Ruler Wrapper (Drag-enabled) -->
-            <div class="relative w-full overflow-hidden rounded-lg bg-slate-900 border border-cctv-border h-16 cursor-grab active:cursor-grabbing select-none" id="timelineScrollerWrapper">
+            <div class="relative w-full overflow-hidden bg-[#090d16] h-10 cursor-grab active:cursor-grabbing select-none" id="timelineScrollerWrapper">
               <!-- Draggable Track: Contains Ruler and Recording Segments -->
               <div id="timelineTrack" class="absolute top-0 bottom-0 left-0 h-full will-change-transform" style="transform: translateX(0px);">
                 <!-- Dynamic hour / minute / second ticks and labels rendered by JS -->
                 <div id="timelineRuler" class="absolute inset-0 pointer-events-none"></div>
 
-                <!-- Recording Segments Layer (Blue Bars) -->
+                <!-- Recording Segments Layer (Hikvision Cyan/Blue Continuous Strip) -->
                 <div id="timelineRecordingBlocks" class="absolute inset-0 pointer-events-none"></div>
               </div>
 
               <!-- Playhead Needle (Yellow Vertical Line Fixed Permanently at Center: 50%) -->
               <div id="timelinePlayhead" class="absolute top-0 bottom-0 pointer-events-none flex flex-col items-center z-20" style="left: 50%; transform: translateX(-50%);">
-                <div id="timelineCenterTimeDisplay" class="bg-slate-950/95 text-white font-mono text-[11px] font-bold px-2 py-0.5 rounded border border-amber-400/60 shadow-[0_2px_8px_rgba(0,0,0,0.8)] whitespace-nowrap -mt-0.5 tracking-wider">
-                  2026-09-18 00:00:00
+                <!-- Hikvision Floating Yellow Time Stamp Badge -->
+                <div id="timelineCenterTimeDisplay" class="bg-slate-950 text-amber-400 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded border border-amber-400/80 shadow-[0_2px_8px_rgba(0,0,0,0.9)] whitespace-nowrap tracking-wider select-none">
+                  2026-09-25 00:00:00
                 </div>
-                <div class="w-2.5 h-2.5 bg-amber-400 rotate-45 shadow-[0_0_8px_#f59e0b] border border-slate-950 -mt-0.5"></div>
+                <!-- Small Downward Arrow -->
+                <div class="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[4px] border-t-amber-400"></div>
+                <!-- Center Line -->
                 <div class="w-[2px] flex-1 bg-amber-400 shadow-[0_0_8px_#f59e0b]"></div>
               </div>
-            </div>
 
-            <!-- Legend & Shortcuts -->
-            <div class="flex items-center space-x-4 mt-1 text-[10px] text-slate-400 px-1">
-              <div class="flex items-center space-x-1.5">
-                <span class="inline-block w-3 h-2 rounded bg-blue-500 shadow-[0_0_4px_#3b82f6]"></span>
-                <span>Rekaman NVR (Biru)</span>
-              </div>
-              <div class="flex items-center space-x-1.5">
-                <span class="inline-block w-2.5 h-2.5 bg-amber-400 rotate-45"></span>
-                <span>Jarum Tengah (Waktu Ditunjuk)</span>
-              </div>
-              <div class="flex items-center space-x-1 text-slate-500 ml-auto hidden md:flex">
-                <i class="fa-solid fa-keyboard"></i>
-                <span>Pintasan: <b>Klik tahan & geser</b> linimasa | <b>Ctrl + Scroll Mouse</b> Single Frame</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Playback Control Toolbar (Di bawah layar rekaman) -->
-          <div id="playbackToolbar" class="bg-cctv-panel border-t border-cctv-border px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 select-none flex-shrink-0">
-            <!-- Left: Playback Controls (Stop, Step Back, Play/Pause, Step Forward, Single Frame) -->
-            <div class="flex items-center space-x-1.5">
-              <button type="button" id="pbBtnStop" title="Berhenti / Reset"
-                class="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-cctv-border">
-                <i class="fa-solid fa-stop text-xs"></i>
-              </button>
-
-              <button type="button" id="pbBtnStepBack" title="Mundur 10 Detik"
-                class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center space-x-1 transition border border-cctv-border text-xs font-mono">
-                <i class="fa-solid fa-backward-step"></i>
-                <span>-10s</span>
-              </button>
-
-              <button type="button" id="pbBtnPlayPause" title="Jeda / Lanjutkan"
-                class="h-8 px-3.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition shadow">
-                <i id="pbIconPlayPause" class="fa-solid fa-pause"></i>
-                <span id="pbLabelPlayPause">Jeda</span>
-              </button>
-
-              <button type="button" id="pbBtnStepForward" title="Maju 10 Detik"
-                class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center space-x-1 transition border border-cctv-border text-xs font-mono">
-                <span>+10s</span>
-                <i class="fa-solid fa-forward-step"></i>
-              </button>
-
-              <div class="h-5 w-px bg-cctv-border mx-1"></div>
-
-              <!-- Single Frame Stepping Buttons (Hikvision Style) -->
-              <div class="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-amber-500/30">
-                <button type="button" id="pbBtnFrameBack" title="Mundur 1 Frame (-0.04s) / Ctrl + Scroll Bawah"
-                  class="h-7 px-2 rounded text-amber-400 hover:text-white hover:bg-slate-800 transition text-xs font-mono font-bold flex items-center space-x-1">
-                  <i class="fa-solid fa-backward-step text-[10px]"></i>
-                  <span>|◀</span>
+              <!-- Integrated Timeline Zoom Controls (+ & -) Docked on Right Edge like Hikvision -->
+              <div class="absolute right-2 top-1.5 z-30 flex items-center bg-slate-950/90 rounded border border-slate-700/80 px-1 py-0.5 text-xs shadow-md">
+                <button type="button" id="tlBtnZoomOut" class="w-5 h-5 rounded hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-[10px] transition active:scale-95" title="Perkecil Skala (-)">
+                  <i class="fa-solid fa-minus"></i>
                 </button>
-                <span class="text-[10px] text-amber-500/80 font-mono font-semibold px-1">Frame</span>
-                <button type="button" id="pbBtnFrameForward" title="Maju 1 Frame (+0.04s) / Ctrl + Scroll Atas"
-                  class="h-7 px-2 rounded text-amber-400 hover:text-white hover:bg-slate-800 transition text-xs font-mono font-bold flex items-center space-x-1">
-                  <span>▶|</span>
-                  <i class="fa-solid fa-forward-step text-[10px]"></i>
+                <span id="pbZoomScaleLabel" class="text-[10px] font-mono text-amber-400 font-bold px-1.5 select-none">24 Jam</span>
+                <button type="button" id="tlBtnZoomIn" class="w-5 h-5 rounded hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-[10px] transition active:scale-95" title="Perbesar Skala (+)">
+                  <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
             </div>
 
-            <!-- Center: Playback Speed Control (-4x to +4x) -->
-            <div class="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-cctv-border text-xs">
-              <span class="text-[10px] text-slate-400 px-1 font-semibold">Laju:</span>
-              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="0.25">-4x</button>
-              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="0.5">-2x</button>
-              <button type="button" class="pb-speed-btn active px-2.5 py-0.5 rounded text-xs font-mono font-bold text-white bg-brand-500" data-speed="1.0">1x</button>
-              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="2.0">2x</button>
-              <button type="button" class="pb-speed-btn px-2 py-0.5 rounded text-xs font-mono text-slate-400 hover:text-white" data-speed="4.0">4x</button>
-            </div>
-
-            <!-- Right: Zoom Video Canvas Control (In/Out/Reset/Fullscreen) -->
-            <div class="flex items-center space-x-1">
-              <button type="button" id="pbBtnToggleTimeline" class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center space-x-1.5 transition border border-cctv-border text-xs font-semibold mr-1" title="Tampilkan / Sembunyikan Linimasa NVR">
-                <i class="fa-solid fa-timeline text-amber-400"></i>
-                <span class="hidden sm:inline">Linimasa</span>
-              </button>
-
-              <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-cctv-border text-xs mr-1">
-                <button type="button" id="pbBtnZoomOut" class="h-7 w-7 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Zoom Out Layar Video">
-                  <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
-                </button>
-                <span id="pbZoomLevel" class="text-[10px] font-mono text-slate-300 px-1.5 font-semibold">100%</span>
-                <button type="button" id="pbBtnZoomIn" class="h-7 w-7 rounded flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Zoom In Layar Video">
-                  <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
-                </button>
-                <button type="button" id="pbBtnZoomReset" class="h-7 px-1.5 rounded text-[10px] text-slate-400 hover:text-white hover:bg-slate-800 transition font-mono" title="Reset Zoom Layar">
-                  1:1
-                </button>
+            <!-- Hikvision Minimal Legend Bar -->
+            <div class="flex items-center justify-between text-[10px] bg-slate-950 px-3 py-1 border-t border-slate-800/80">
+              <div class="flex items-center space-x-1.5 text-slate-400 font-mono">
+                <i class="fa-solid fa-hand-pointer text-[9px] text-amber-400/80"></i>
+                <span class="hidden sm:inline">Klik & geser linimasa untuk cari menit/detik | Ctrl + Scroll Mouse untuk single frame</span>
+                <span class="sm:hidden">Geser linimasa untuk cari waktu</span>
               </div>
-
-              <button type="button" id="pbBtnFullscreen" class="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-cctv-border" title="Layar Penuh (F)">
-                <i id="pbIconFullscreen" class="fa-solid fa-expand text-xs"></i>
-              </button>
+              <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-1">
+                  <span class="inline-block w-2.5 h-2 rounded-sm bg-sky-500 shadow-[0_0_4px_#0284c7]"></span>
+                  <span class="text-slate-300 font-mono">Continuous</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <span class="inline-block w-2.5 h-2 rounded-sm bg-rose-500"></span>
+                  <span class="text-slate-400 font-mono">Alarm</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <span class="inline-block w-2.5 h-2 rounded-sm bg-amber-400"></span>
+                  <span class="text-slate-400 font-mono">Manual</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

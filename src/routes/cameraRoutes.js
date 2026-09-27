@@ -184,6 +184,7 @@ router.post('/:id/playback-stream', authMiddleware, async (req, res) => {
   try {
     // Delete existing stream first if active to reset RTSP session
     await fetch(`http://127.0.0.1:1984/api/streams?name=${encodeURIComponent(streamName)}`, { method: 'DELETE' }).catch(() => {});
+    await new Promise(r => setTimeout(r, 50));
 
     // Direct RTSP first for zero latency, with hardware H.264 transcode fallback
     const transcodeSrc = `ffmpeg:${playbackRtspUrl}#video=h264#hardware`;

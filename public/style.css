@@ -376,7 +376,10 @@ video-rtc video::-webkit-media-controls-panel {
 
 /* Hikvision 24-Hour Timeline Bar (Center-Fixed Needle & Draggable Track) */
 #timelineScrollerWrapper {
-  background: #060913;
+  background: #090d16;
+  height: 38px;
+  position: relative;
+  overflow: hidden;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
   user-select: none;
   touch-action: pan-y;
@@ -399,9 +402,9 @@ video-rtc video::-webkit-media-controls-panel {
   border-left: 1px solid #334155;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding-left: 4px;
-  padding-bottom: 2px;
+  justify-content: flex-start;
+  padding-left: 3px;
+  padding-top: 1px;
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 10px;
   font-weight: 600;
@@ -414,25 +417,31 @@ video-rtc video::-webkit-media-controls-panel {
 .tl-sub-tick {
   position: absolute;
   top: 0;
-  height: 8px;
+  height: 6px;
   border-left: 1px solid #1e293b;
   pointer-events: none;
 }
 
 .tl-recording-segment {
   position: absolute;
-  top: 24px;
-  height: 14px;
-  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
-  border: 1px solid #60a5fa;
-  border-radius: 2px;
-  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+  bottom: 2px;
+  height: 7px;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  border: 1px solid #0284c7;
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(56, 189, 248, 0.5);
   pointer-events: none;
 }
 
 #timelinePlayhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   z-index: 25;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Hikvision Calendar Styling */
